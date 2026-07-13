@@ -8,6 +8,13 @@
       "when": 1783939533318,
       "tag": "0000_amusing_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783943453040,
+      "tag": "0001_daffy_mongoose",
+      "breakpoints": true
     }
   ]
 }
