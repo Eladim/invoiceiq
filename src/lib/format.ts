@@ -27,3 +27,15 @@ export function formatDate(iso: string | null): string {
     year: "numeric",
   }).format(d);
 }
+
+/** Format a full ISO datetime or epoch-seconds as e.g. "Aug 1, 2026". */
+export function formatLongDate(input: string | number | null): string {
+  if (input === null) return "—";
+  const d = typeof input === "number" ? new Date(input * 1000) : new Date(input);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(d);
+}
