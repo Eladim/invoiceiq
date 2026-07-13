@@ -23,6 +23,9 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1).default("gpt-5.6-luna"),
 
+  // Vercel Blob (file storage). Provisioned via `vercel blob` / dashboard.
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
+
   // Stripe (wired up in the billing milestone)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -38,6 +41,7 @@ const parsed = envSchema.safeParse({
   CLERK_WEBHOOK_SIGNING_SECRET: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
+  BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   STRIPE_PRICE_MONTHLY: process.env.STRIPE_PRICE_MONTHLY,
