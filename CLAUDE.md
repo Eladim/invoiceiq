@@ -18,6 +18,7 @@ Clerk auth, Stripe subscriptions, OpenAI gpt-5.6-luna via Structured Outputs, Ve
 - UI: shadcn/ui components; every data view has loading, empty, and error states.
 - Money = numeric strings from DB, format with Intl.NumberFormat. Dates ISO 8601.
 - Conventional commits (feat:, fix:, chore:). Small commits per feature.
+- Don't run git commit — the user commits. After any substantial change, end the reply with a suggested conventional-commit message for them to use.
 
 ## Commands
 pnpm dev / pnpm build / pnpm lint / pnpm typecheck / pnpm test
