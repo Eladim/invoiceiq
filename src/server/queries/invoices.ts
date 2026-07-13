@@ -116,3 +116,17 @@ export async function listInvoices(
 
   return { rows: page, nextCursor };
 }
+
+/** Fetch one invoice (owner-scoped) with its line items, or undefined. */
+export async function getInvoiceDetail(userId: string, id: string) {
+  return db.query.invoices.findFirst({
+    where: and(eq(invoices.id, id), eq(invoices.userId, userId)),
+    with: {
+      lineItems: {
+        orderBy: (li, { asc: ascOrder }) => ascOrder(li.id),
+      },
+    },
+  });
+}
+
+export type InvoiceDetail = NonNullable<Awaited<ReturnType<typeof getInvoiceDetail>>>;

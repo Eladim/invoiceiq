@@ -17,13 +17,30 @@ export const INVOICE_CATEGORIES = [
  * `.date()` string format to `z.iso.date()`, and structured outputs ignore
  * format constraints anyway, so a string keeps the model call strict-safe.
  */
+const confidenceLevel = z.enum(CONFIDENCE_LEVELS);
+
+// Fixed-key object (not z.record) so OpenAI strict Structured Outputs accepts
+// it — strict mode requires every property named and required.
+const confidenceSchema = z.object({
+  vendor_name: confidenceLevel,
+  vendor_address: confidenceLevel,
+  invoice_number: confidenceLevel,
+  invoice_date: confidenceLevel,
+  due_date: confidenceLevel,
+  currency: confidenceLevel,
+  subtotal: confidenceLevel,
+  tax: confidenceLevel,
+  total: confidenceLevel,
+  category: confidenceLevel,
+});
+
 export const extractionSchema = z.object({
   vendor_name: z.string().nullable(),
   vendor_address: z.string().nullable(),
   invoice_number: z.string().nullable(),
   invoice_date: z.string().nullable(),
   due_date: z.string().nullable(),
-  currency: z.string().length(3).nullable(),
+  currency: z.string().nullable(),
   subtotal: z.number().nullable(),
   tax: z.number().nullable(),
   total: z.number().nullable(),
@@ -36,7 +53,7 @@ export const extractionSchema = z.object({
       amount: z.number(),
     }),
   ),
-  confidence: z.record(z.string(), z.enum(CONFIDENCE_LEVELS)),
+  confidence: confidenceSchema,
 });
 
 export type Extraction = z.infer<typeof extractionSchema>;

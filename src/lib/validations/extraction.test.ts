@@ -7,6 +7,19 @@ import {
   type Extraction,
 } from "./extraction";
 
+const FULL_CONFIDENCE: Extraction["confidence"] = {
+  vendor_name: "high",
+  vendor_address: "medium",
+  invoice_number: "high",
+  invoice_date: "high",
+  due_date: "medium",
+  currency: "high",
+  subtotal: "high",
+  tax: "medium",
+  total: "high",
+  category: "medium",
+};
+
 function makeExtraction(overrides: Partial<Extraction> = {}): Extraction {
   return {
     vendor_name: "Acme Corp",
@@ -20,7 +33,7 @@ function makeExtraction(overrides: Partial<Extraction> = {}): Extraction {
     total: 120,
     category: "software",
     line_items: [{ description: "Widget", quantity: 1, unit_price: 100, amount: 100 }],
-    confidence: { vendor_name: "high", total: "high" },
+    confidence: FULL_CONFIDENCE,
     ...overrides,
   };
 }

@@ -29,5 +29,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 Typecheck passes, feature works against real services in dev, deployed preview works.
 
 ## Deferred / TODO
-- Invoices list (`/app/invoices`): **Export CSV** button + bulk "Export selected" — depends on the Stripe/Pro milestone and `GET /api/export` (SPEC §5); currently a disabled Pro-locked button.
-- Invoices list row-actions **Edit** — depends on the invoice detail page (`/app/invoices/[id]`); currently the Edit menu item just links to the (not-yet-built) detail route, same as View.
+- **Export CSV** (invoices toolbar + bulk "Export selected" + detail "Export") — depends on the Stripe/Pro milestone and `GET /api/export` (SPEC §5); currently disabled Pro-locked buttons.
+
+## Notes
+- Extraction is live: `gpt-5.6-luna` is a real model; `run.ts` reads the private blob via `get(..., { access: "private" })` and calls Structured Outputs. `confidence` must stay a fixed-key object (not `z.record`) for OpenAI strict mode.

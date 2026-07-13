@@ -19,7 +19,18 @@ function makeExtraction(overrides: Partial<Extraction> = {}): Extraction {
       { description: "A", quantity: 1, unit_price: 60, amount: 60 },
       { description: "B", quantity: 1, unit_price: 40, amount: 40 },
     ],
-    confidence: { vendor_name: "high", total: "high" },
+    confidence: {
+      vendor_name: "high",
+      vendor_address: "medium",
+      invoice_number: "high",
+      invoice_date: "high",
+      due_date: "medium",
+      currency: "high",
+      subtotal: "high",
+      tax: "medium",
+      total: "high",
+      category: "medium",
+    },
     ...overrides,
   };
 }
@@ -110,7 +121,6 @@ describe("extractInvoiceData", () => {
       tax: null,
       total: null,
       line_items: [],
-      confidence: {},
     });
 
     const outcome = await extractInvoiceData(vi.fn().mockResolvedValue(junk));

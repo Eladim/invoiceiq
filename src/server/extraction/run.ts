@@ -1,6 +1,7 @@
 import "server-only";
 
 import OpenAI from "openai";
+import { get } from "@vercel/blob";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type {
   ChatCompletionContentPart,
@@ -37,13 +38,17 @@ export async function runExtractionForInvoice(invoiceId: string): Promise<void> 
   if (!invoice) return;
 
   try {
-    // Fetch the stored file and inline it as a data URL for the model.
-    const response = await fetch(invoice.blobUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file (${response.status})`);
+    // Read the stored file (private Blob store) and inline it as a data URL.
+    if (!env.BLOB_READ_WRITE_TOKEN) throw new Error("BLOB_READ_WRITE_TOKEN not set");
+    const file = await get(invoice.blobUrl, {
+      access: "private",
+      token: env.BLOB_READ_WRITE_TOKEN,
+    });
+    if (!file || file.statusCode !== 200) {
+      throw new Error("Failed to read stored file");
     }
-    const contentType = response.headers.get("content-type") ?? "application/octet-stream";
-    const base64 = Buffer.from(await response.arrayBuffer()).toString("base64");
+    const contentType = file.blob.contentType;
+    const base64 = Buffer.from(await new Response(file.stream).arrayBuffer()).toString("base64");
     const dataUrl = `data:${contentType};base64,${base64}`;
 
     const filePart: ChatCompletionContentPart = contentType.includes("pdf")
