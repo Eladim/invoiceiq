@@ -209,10 +209,10 @@ const Extraction = z.object({
 
 | Week | Deliverable |
 |---|---|
-| 1 | Repo, CI, Clerk auth, DB schema + migrations, app shell (sidebar/nav), upload → blob storage, deploy to Vercel day 1 |
-| 2 | Extraction pipeline end-to-end, invoice list + detail pages, inline editing, failure handling |
-| 3 | Stripe checkout + webhooks + portal, quota enforcement, billing page, pricing page |
-| 4 | Dashboard analytics, landing page, seed data, polish all states, README, 2-min demo video |
+| 1 | Repo, CI (typecheck + lint + Vitest on push), Clerk auth + webhook handler unit tests, DB schema + migrations, app shell (sidebar/nav), upload → blob storage, deploy to Vercel day 1 |
+| 2 | Extraction pipeline end-to-end (+ unit tests for Zod validation & consistency checks), invoice list + detail pages, inline editing, failure handling |
+| 3 | Stripe checkout + webhooks (+ unit tests for webhook idempotency) + portal, quota enforcement, billing page, pricing page |
+| 4 | Dashboard analytics, landing page, seed data, Playwright E2E (sign-up → upload → extraction visible; upgrade flow), polish all states, README, 2-min demo video |
 
 ---
 ---
