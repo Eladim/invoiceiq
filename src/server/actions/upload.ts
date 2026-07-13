@@ -6,6 +6,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { del, put } from "@vercel/blob";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { FREE_DOCUMENT_LIMIT } from "@/lib/constants";
 import { env } from "@/lib/env";
@@ -17,6 +18,7 @@ import {
 import { db } from "@/server/db";
 import { withTransaction } from "@/server/db/transaction";
 import { invoices, subscriptions, usageCounters, users } from "@/server/db/schema";
+import { runExtractionForInvoice } from "@/server/extraction/run";
 
 export type UploadResult =
   | { ok: true; invoiceId: string }
@@ -99,7 +101,8 @@ export async function uploadInvoice(formData: FormData): Promise<UploadResult> {
   try {
     const ext = EXTENSION_FOR_MIME[mime];
     const blob = await put(`invoices/${userId}/${randomUUID()}.${ext}`, file, {
-      access: "public",
+      // The provisioned Blob store is private; invoice documents are sensitive.
+      access: "private",
       contentType: mime,
       token: env.BLOB_READ_WRITE_TOKEN,
     });
@@ -157,6 +160,9 @@ export async function uploadInvoice(formData: FormData): Promise<UploadResult> {
 
       return invoice.id;
     });
+
+    // Kick off AI extraction after the response is sent (SPEC §3 steps 4–7).
+    after(() => runExtractionForInvoice(invoiceId));
 
     revalidatePath("/app", "layout");
     return { ok: true, invoiceId };

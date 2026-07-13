@@ -29,6 +29,9 @@ vi.mock("@vercel/blob", () => ({ put: putMock, del: delMock }));
 vi.mock("@/server/db", () => ({ db: dbMock }));
 vi.mock("@/server/db/transaction", () => ({ withTransaction: withTransactionMock }));
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
+// after() schedules background work; run nothing and don't touch the trigger.
+vi.mock("next/server", () => ({ after: vi.fn() }));
+vi.mock("@/server/extraction/run", () => ({ runExtractionForInvoice: vi.fn() }));
 // Avoid the real env module's boot-time Zod validation; supply a Blob token.
 vi.mock("@/lib/env", () => ({ env: { BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test" } }));
 
