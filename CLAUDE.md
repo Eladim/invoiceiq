@@ -27,3 +27,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 ## Definition of done
 Typecheck passes, feature works against real services in dev, deployed preview works.
+
+## Deferred / TODO
+- Invoices list (`/app/invoices`): **Export CSV** button + bulk "Export selected" — depends on the Stripe/Pro milestone and `GET /api/export` (SPEC §5); currently a disabled Pro-locked button.
+- Invoices list row-actions **Edit** — depends on the invoice detail page (`/app/invoices/[id]`); currently the Edit menu item just links to the (not-yet-built) detail route, same as View.
