@@ -128,3 +128,17 @@
     @apply font-sans;
   }
 }
+
+/* Upload page (§8) — file-card state animations. */
+@keyframes iq-shimmer {
+  0% { background-position: -320px 0; }
+  100% { background-position: 320px 0; }
+}
+@keyframes iq-scan {
+  0%, 100% { top: 8%; }
+  50% { top: 82%; }
+}
+@keyframes iq-pop {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
