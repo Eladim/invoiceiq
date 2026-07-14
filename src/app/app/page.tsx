@@ -50,6 +50,8 @@ export default async function DashboardPage() {
           value={formatMoney(data.spendThisMonth, currency)}
           deltaPct={data.spendDeltaPct}
           spark={data.sparklines.spend}
+          color="#6366f1"
+          iconClassName="bg-indigo-50 text-indigo-600"
         />
         <StatCard
           icon={FileCheck2}
@@ -57,7 +59,8 @@ export default async function DashboardPage() {
           value={String(data.invoicesProcessed)}
           subtitle="Completed all-time"
           spark={data.sparklines.processed}
-          sparkClassName="text-emerald-500"
+          color="#10b981"
+          iconClassName="bg-emerald-50 text-emerald-600"
         />
         <StatCard
           icon={TriangleAlert}
@@ -65,17 +68,21 @@ export default async function DashboardPage() {
           value={String(data.pendingReview)}
           subtitle="Low-confidence fields"
           spark={data.sparklines.pending}
-          sparkClassName="text-amber-500"
+          color="#f59e0b"
+          iconClassName="bg-amber-50 text-amber-600"
         />
         <StatCard
           icon={CalendarClock}
           label="Upcoming due"
           value={String(data.upcomingDueCount)}
           subtitle={
-            data.upcomingDueCount > 0 ? formatMoney(data.upcomingDueSum, currency) : "Nothing due"
+            data.upcomingDueCount > 0
+              ? `${formatMoney(data.upcomingDueSum, currency)} due`
+              : "Nothing due"
           }
           spark={data.sparklines.upcoming}
-          sparkClassName="text-slate-400"
+          color="#94a3b8"
+          iconClassName="bg-slate-100 text-slate-500"
         />
       </div>
 
@@ -97,11 +104,11 @@ export default async function DashboardPage() {
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
-              <th className="px-4 py-2 font-medium">Vendor</th>
-              <th className="px-4 py-2 font-medium">Date</th>
-              <th className="px-4 py-2 text-right font-medium">Total</th>
-              <th className="px-4 py-2 font-medium">Status</th>
+            <tr className="border-b border-slate-100 text-left text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+              <th className="px-4 py-2.5">Vendor</th>
+              <th className="px-4 py-2.5">Date</th>
+              <th className="px-4 py-2.5 text-right">Total</th>
+              <th className="px-4 py-2.5">Status</th>
             </tr>
           </thead>
           <tbody>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import type { UsageSummary } from "@/server/queries/usage";
 import { cn } from "@/lib/utils";
@@ -8,26 +9,27 @@ export function UsageMeter({ usage }: { usage: UsageSummary }) {
 
   if (plan === "pro" || limit === null) {
     return (
-      <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
-        <p className="text-sm font-medium text-sidebar-foreground">Pro plan</p>
-        <p className="mt-0.5 text-xs text-sidebar-foreground/60">Unlimited documents</p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+        <p className="text-[11.5px] font-semibold text-slate-600">Pro plan</p>
+        <p className="mt-1 text-[11.5px] text-slate-400">Unlimited documents</p>
       </div>
     );
   }
 
   const pct = Math.min(100, Math.round((used / limit) * 100));
   const atLimit = used >= limit;
+  const nearLimit = used >= limit - 1;
 
   return (
-    <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
-      <div className="flex items-baseline justify-between">
-        <p className="text-xs font-medium text-sidebar-foreground/70">Usage this month</p>
-        <p className="text-xs tabular-nums text-sidebar-foreground/60">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11.5px] font-semibold text-slate-600">Usage this month</span>
+        <span className="text-[11.5px] font-semibold tabular-nums text-slate-700">
           {used} / {limit}
-        </p>
+        </span>
       </div>
       <div
-        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-sidebar-border"
+        className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={limit}
@@ -37,16 +39,18 @@ export function UsageMeter({ usage }: { usage: UsageSummary }) {
         <div
           className={cn(
             "h-full rounded-full transition-all",
-            atLimit ? "bg-destructive" : "bg-sidebar-primary",
+            atLimit ? "bg-red-500" : nearLimit ? "bg-amber-500" : "bg-indigo-600",
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
+      <p className="mt-2 text-[11.5px] text-slate-400">{used} of {limit} documents used</p>
       <Link
         href="/app/billing"
-        className="mt-3 inline-block text-xs font-medium text-sidebar-foreground underline-offset-4 hover:underline"
+        className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
       >
         {atLimit ? "Limit reached — upgrade" : "Upgrade to Pro"}
+        <ArrowRight className="size-3" />
       </Link>
     </div>
   );

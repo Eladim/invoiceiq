@@ -11,15 +11,15 @@ export default async function AppLayout({
   const sidebar = <AppSidebar usage={usage} />;
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden">
+    <div className="flex h-dvh w-full overflow-hidden bg-slate-50">
       {/* Desktop rail */}
-      <aside className="hidden w-64 shrink-0 border-r border-sidebar-border md:block">
+      <aside className="hidden w-64 shrink-0 border-r border-slate-200 md:block">
         {sidebar}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar sidebar={sidebar} />
-        <main className="flex-1 overflow-y-auto bg-background p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">{children}</main>
       </div>
     </div>
   );

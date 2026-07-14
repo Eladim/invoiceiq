@@ -12,7 +12,7 @@ export function AppTopbar({ sidebar }: { sidebar: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-4">
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur">
       {/* Keyed by pathname so navigating (incl. from a link inside) remounts it closed. */}
       <Sheet key={pathname}>
         <SheetTrigger
