@@ -8,6 +8,7 @@ import { InvoicesTable } from "@/components/app/invoices/invoices-table";
 import { InvoicesToolbar } from "@/components/app/invoices/invoices-toolbar";
 import { hasActiveFilters, parseInvoiceFilters } from "@/lib/validations/invoice-filters";
 import { listInvoices } from "@/server/queries/invoices";
+import { getCurrentUsage } from "@/server/queries/usage";
 
 export const metadata: Metadata = { title: "Invoices · InvoiceIQ" };
 
@@ -18,9 +19,11 @@ export default async function InvoicesPage({
 }) {
   const { userId } = await auth();
   const filters = parseInvoiceFilters(await searchParams);
-  const { rows, nextCursor } = userId
-    ? await listInvoices(userId, filters)
-    : { rows: [], nextCursor: null };
+  const [{ rows, nextCursor }, usage] = await Promise.all([
+    userId ? listInvoices(userId, filters) : Promise.resolve({ rows: [], nextCursor: null }),
+    getCurrentUsage(),
+  ]);
+  const isPro = usage.plan === "pro";
 
   const filteredOrPaged = hasActiveFilters(filters) || filters.cursor !== null;
 
@@ -43,7 +46,7 @@ export default async function InvoicesPage({
       </div>
 
       <div className="mt-6">
-        <InvoicesToolbar />
+        <InvoicesToolbar isPro={isPro} />
       </div>
 
       <div className="mt-4">
@@ -55,7 +58,7 @@ export default async function InvoicesPage({
           )
         ) : (
           <>
-            <InvoicesTable rows={rows} filters={filters} />
+            <InvoicesTable rows={rows} filters={filters} isPro={isPro} />
             <InvoicesPagination filters={filters} nextCursor={nextCursor} count={rows.length} />
           </>
         )}

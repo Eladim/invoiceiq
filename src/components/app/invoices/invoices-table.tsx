@@ -9,7 +9,6 @@ import {
   ArrowUp,
   ChevronsUpDown,
   Eye,
-  Lock,
   MoreVertical,
   Pencil,
   Trash2,
@@ -26,6 +25,7 @@ import {
 import { deleteInvoice } from "@/server/actions/invoice";
 import type { InvoiceRow } from "@/server/queries/invoices";
 import { CategoryBadge, StatusBadge } from "./badges";
+import { ExportCsvButton } from "./export-csv-button";
 
 function SortHeader({
   label,
@@ -114,9 +114,11 @@ function RowActions({
 export function InvoicesTable({
   rows,
   filters,
+  isPro,
 }: {
   rows: InvoiceRow[];
   filters: InvoiceFilters;
+  isPro: boolean;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -262,14 +264,7 @@ export function InvoicesTable({
             <Trash2 className="size-4" />
             Delete selected
           </button>
-          <button
-            disabled
-            title="Exporting is a Pro feature — coming soon"
-            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-400"
-          >
-            <Lock className="size-3.5" />
-            Export selected
-          </button>
+          <ExportCsvButton isPro={isPro} ids={[...selected]} label="Export selected" />
           <button
             onClick={() => setSelected(new Set())}
             aria-label="Clear selection"

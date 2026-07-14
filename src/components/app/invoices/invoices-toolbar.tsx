@@ -9,11 +9,12 @@ import {
   INVOICE_CATEGORIES,
   INVOICE_STATUSES,
 } from "@/lib/validations/invoice-filters";
+import { ExportCsvButton } from "./export-csv-button";
 
 const selectClass =
   "h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 outline-none focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-100";
 
-export function InvoicesToolbar() {
+export function InvoicesToolbar({ isPro }: { isPro: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") ?? "");
@@ -115,6 +116,10 @@ export function InvoicesToolbar() {
           Clear
         </button>
       )}
+
+      <div className="ml-auto">
+        <ExportCsvButton isPro={isPro} />
+      </div>
     </div>
   );
 }
