@@ -99,7 +99,7 @@ export default function LandingPage() {
                 <ArrowRight className="size-4" />
               </Link>
               <Link
-                href="/sign-in"
+                href="/demo"
                 className="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
               >
                 View live demo
