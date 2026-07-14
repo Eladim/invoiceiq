@@ -223,17 +223,21 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     startTransition(async () => {
       const res = await deleteAccount();
-      if (res.ok) {
-        // The Clerk user is already deleted, so signOut may stall talking to a
-        // dead session — cap it and hard-navigate away regardless.
-        await Promise.race([
-          clerk.signOut().catch(() => {}),
-          new Promise((r) => setTimeout(r, 2500)),
-        ]);
-        window.location.href = "/";
+      if (!res.ok) {
+        setError(res.error);
         return;
       }
-      setError(res.error);
+      // Account is gone. Let Clerk clear the session and redirect home — a single
+      // navigation. Only force one ourselves if signOut errors or stalls (a dead
+      // session can hang it), so "/" never loads twice.
+      const fallback = setTimeout(() => window.location.replace("/"), 3000);
+      try {
+        await clerk.signOut({ redirectUrl: "/" });
+        clearTimeout(fallback);
+      } catch {
+        clearTimeout(fallback);
+        window.location.replace("/");
+      }
     });
   }
 
