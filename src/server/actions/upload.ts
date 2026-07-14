@@ -10,6 +10,8 @@ import { after } from "next/server";
 
 import { FREE_DOCUMENT_LIMIT } from "@/lib/constants";
 import { env } from "@/lib/env";
+import { sendQuotaWarningEmail } from "@/lib/email";
+import { checkUploadRateLimit } from "@/lib/ratelimit";
 import {
   EXTENSION_FOR_MIME,
   sniffMimeType,
@@ -24,7 +26,7 @@ export type UploadResult =
   | { ok: true; invoiceId: string }
   | {
       ok: false;
-      code: "unauthorized" | "invalid_file" | "quota_exceeded" | "upload_failed";
+      code: "unauthorized" | "invalid_file" | "quota_exceeded" | "upload_failed" | "rate_limited";
       message: string;
     };
 
@@ -44,6 +46,15 @@ export async function uploadInvoice(formData: FormData): Promise<UploadResult> {
   const { userId } = await auth();
   if (!userId) {
     return { ok: false, code: "unauthorized", message: "You must be signed in." };
+  }
+
+  // 0. Rate limit (SPEC §9): 10 uploads/min per user, before any real work.
+  if (!(await checkUploadRateLimit(userId))) {
+    return {
+      ok: false,
+      code: "rate_limited",
+      message: "Too many uploads — please wait a minute and try again.",
+    };
   }
 
   // 1. Shape validation (size + declared type).
@@ -122,7 +133,7 @@ export async function uploadInvoice(formData: FormData): Promise<UploadResult> {
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || null;
 
   try {
-    const invoiceId = await withTransaction(async (tx) => {
+    const { invoiceId, plan, used } = await withTransaction(async (tx) => {
       await tx
         .insert(users)
         .values({ id: userId, email, name })
@@ -158,11 +169,16 @@ export async function uploadInvoice(formData: FormData): Promise<UploadResult> {
         })
         .returning({ id: invoices.id });
 
-      return invoice.id;
+      return { invoiceId: invoice.id, plan, used: counter.used };
     });
 
     // Kick off AI extraction after the response is sent (SPEC §3 steps 4–7).
     after(() => runExtractionForInvoice(invoiceId));
+
+    // Nudge free users the moment they have one document left (fires once).
+    if (plan === "free" && used === FREE_DOCUMENT_LIMIT - 1) {
+      after(() => sendQuotaWarningEmail({ to: email, name, used, limit: FREE_DOCUMENT_LIMIT }));
+    }
 
     revalidatePath("/app", "layout");
     return { ok: true, invoiceId };

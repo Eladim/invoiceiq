@@ -34,6 +34,9 @@ vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("@/server/extraction/run", () => ({ runExtractionForInvoice: vi.fn() }));
 // Avoid the real env module's boot-time Zod validation; supply a Blob token.
 vi.mock("@/lib/env", () => ({ env: { BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test" } }));
+// Stub the server-only side effects so this suite stays unit-level.
+vi.mock("@/lib/ratelimit", () => ({ checkUploadRateLimit: vi.fn(() => Promise.resolve(true)) }));
+vi.mock("@/lib/email", () => ({ sendQuotaWarningEmail: vi.fn(), sendWelcomeEmail: vi.fn() }));
 
 import { uploadInvoice } from "./upload";
 import { FREE_DOCUMENT_LIMIT } from "@/lib/constants";

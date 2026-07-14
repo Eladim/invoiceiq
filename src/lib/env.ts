@@ -26,6 +26,18 @@ const envSchema = z.object({
   // Vercel Blob (file storage). Provisioned via `vercel blob` / dashboard.
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
+  // Upstash Redis — backs the upload rate limiter (SPEC §9). Optional: when
+  // unset the limiter is skipped (dev convenience) and uploads aren't throttled.
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // Resend — transactional email (welcome + quota-warning). Optional: without a
+  // key, sends are skipped. RESEND_FROM must be a verified sender in production;
+  // defaults to Resend's test address (only delivers to the account owner).
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().default("InvoiceIQ <onboarding@resend.dev>"),
+  NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
+
   // Stripe (wired up in the billing milestone)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -42,6 +54,11 @@ const parsed = envSchema.safeParse({
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  RESEND_FROM: process.env.RESEND_FROM,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   STRIPE_PRICE_MONTHLY: process.env.STRIPE_PRICE_MONTHLY,

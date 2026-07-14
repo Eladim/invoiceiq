@@ -2,13 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
 
 const { dbMock, stripeMock } = vi.hoisted(() => ({
-  dbMock: { insert: vi.fn(), update: vi.fn() },
+  dbMock: {
+    insert: vi.fn(),
+    update: vi.fn(),
+    query: { subscriptions: { findFirst: vi.fn() } },
+  },
   stripeMock: { subscriptions: { retrieve: vi.fn() } },
 }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/db", () => ({ db: dbMock }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => stripeMock }));
+vi.mock("@/lib/email", () => ({ sendWelcomeEmail: vi.fn() }));
 
 import { syncStripeEvent } from "./sync";
 import { subscriptions } from "@/server/db/schema";
@@ -29,6 +34,9 @@ beforeEach(() => {
   whereSpy = vi.fn().mockResolvedValue(undefined);
   setSpy = vi.fn(() => ({ where: whereSpy }));
   dbMock.update.mockReturnValue({ set: setSpy });
+
+  // Default: no prior subscription row (fresh upgrade).
+  dbMock.query.subscriptions.findFirst.mockResolvedValue(undefined);
 });
 
 function fakeSubscription(overrides: Record<string, unknown> = {}) {

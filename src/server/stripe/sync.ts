@@ -3,6 +3,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { eq } from "drizzle-orm";
 
+import { sendWelcomeEmail } from "@/lib/email";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/server/db";
 import { subscriptions } from "@/server/db/schema";
@@ -74,8 +75,22 @@ export async function syncStripeEvent(event: Stripe.Event): Promise<void> {
       const subId =
         typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
       if (!userId || !subId) return;
+
+      // Detect the free→pro transition so a webhook replay doesn't re-send.
+      const prior = await db.query.subscriptions.findFirst({
+        where: eq(subscriptions.userId, userId),
+        columns: { plan: true },
+      });
+
       const sub = await getStripe().subscriptions.retrieve(subId);
       await upsertFromSubscription(userId, sub);
+
+      if (prior?.plan !== "pro" && planForStatus(mapStatus(sub.status)) === "pro") {
+        await sendWelcomeEmail({
+          to: session.customer_details?.email ?? session.customer_email ?? "",
+          name: session.customer_details?.name ?? null,
+        });
+      }
       break;
     }
 
