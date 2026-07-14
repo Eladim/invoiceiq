@@ -28,8 +28,5 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 ## Definition of done
 Typecheck passes, feature works against real services in dev, deployed preview works.
 
-## Deferred / TODO
-- Invoice detail "Export" button is still a disabled Pro-lock placeholder (the invoices list toolbar + bulk export are live via `GET /api/export`).
-
 ## Notes
 - Extraction is live: `gpt-5.6-luna` is a real model; `run.ts` reads the private blob via `get(..., { access: "private" })` and calls Structured Outputs. `confidence` must stay a fixed-key object (not `z.record`) for OpenAI strict mode.

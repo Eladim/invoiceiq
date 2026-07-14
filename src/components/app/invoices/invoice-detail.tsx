@@ -7,7 +7,6 @@ import { Dialog } from "@base-ui/react/dialog";
 import {
   ArrowLeft,
   Loader2,
-  Lock,
   Plus,
   RefreshCw,
   Trash2,
@@ -22,6 +21,7 @@ import { CONFIDENCE_KEYS, type EditableField } from "@/lib/validations/invoice-u
 import { deleteInvoice, reprocessInvoice, updateInvoice } from "@/server/actions/invoice";
 import type { FieldConfidence } from "@/server/db/schema";
 import { DocumentPreview } from "./document-preview";
+import { ExportCsvButton } from "./export-csv-button";
 import { StatusBadge } from "./badges";
 
 type FormState = Record<EditableField, string>;
@@ -37,6 +37,7 @@ export type InvoiceDetailProps = {
   confidence: FieldConfidence | null;
   initial: FormState;
   lineItems: LineItemState[];
+  isPro: boolean;
 };
 
 const parseNum = (s: string): number | null => {
@@ -166,14 +167,7 @@ export function InvoiceDetail(props: InvoiceDetailProps) {
             )}
             Reprocess with AI
           </button>
-          <button
-            disabled
-            title="Exporting is a Pro feature — coming soon"
-            className="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-400"
-          >
-            <Lock className="size-3.5" />
-            Export
-          </button>
+          <ExportCsvButton isPro={props.isPro} ids={[props.id]} label="Export" />
           <button
             onClick={() => setDeleteOpen(true)}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"

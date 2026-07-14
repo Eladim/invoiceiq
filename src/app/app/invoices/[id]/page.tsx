@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { InvoiceDetail } from "@/components/app/invoices/invoice-detail";
 import { getInvoiceDetail } from "@/server/queries/invoices";
+import { getCurrentUsage } from "@/server/queries/usage";
 
 export const metadata: Metadata = { title: "Invoice · InvoiceIQ" };
 
@@ -17,7 +18,7 @@ export default async function InvoiceDetailPage({
   const { id } = await params;
   if (!userId || !z.uuid().safeParse(id).success) notFound();
 
-  const detail = await getInvoiceDetail(userId, id);
+  const [detail, usage] = await Promise.all([getInvoiceDetail(userId, id), getCurrentUsage()]);
   if (!detail) notFound();
 
   const str = (v: string | null) => v ?? "";
@@ -50,6 +51,7 @@ export default async function InvoiceDetailPage({
         unitPrice: li.unitPrice ?? "",
         amount: li.amount,
       }))}
+      isPro={usage.plan === "pro"}
     />
   );
 }
