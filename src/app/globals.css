@@ -146,3 +146,69 @@
   from { opacity: 0; transform: translate(-50%, 16px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+/* Landing page (§8) — namespaced iql-* so they don't collide with the upload
+   page's iq-scan/iq-pop above. */
+@keyframes iql-rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes iql-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.8); }
+}
+@keyframes iql-scan {
+  0% { transform: translateY(-56px); opacity: 0; }
+  6% { opacity: 1; }
+  52% { opacity: 1; }
+  58% { transform: translateY(268px); opacity: 0; }
+  100% { transform: translateY(268px); opacity: 0; }
+}
+@keyframes iql-chip1 {
+  0%, 14% { opacity: 0; transform: translateY(10px) scale(.96); }
+  19% { opacity: 1; transform: translateY(0) scale(1); }
+  90% { opacity: 1; }
+  96%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+}
+@keyframes iql-chip2 {
+  0%, 28% { opacity: 0; transform: translateY(10px) scale(.96); }
+  33% { opacity: 1; transform: translateY(0) scale(1); }
+  90% { opacity: 1; }
+  96%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+}
+@keyframes iql-chip3 {
+  0%, 42% { opacity: 0; transform: translateY(10px) scale(.96); }
+  47% { opacity: 1; transform: translateY(0) scale(1); }
+  90% { opacity: 1; }
+  96%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+}
+@keyframes iql-badge {
+  0%, 56% { opacity: 0; transform: translateY(8px); }
+  62% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes iql-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Section reveal: a one-shot rise on load, upgraded to a scroll-linked reveal
+   where the browser supports scroll-driven animations. */
+.iql-reveal {
+  animation: iql-rise .8s cubic-bezier(.22, 1, .36, 1) both;
+}
+@supports (animation-timeline: view()) {
+  .iql-reveal {
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iql-reveal,
+  [class*="iql-"],
+  [data-iql-anim] {
+    animation: none !important;
+  }
+}
