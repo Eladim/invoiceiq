@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { sendWelcomeEmail } from "@/lib/email";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/server/db";
-import { subscriptions } from "@/server/db/schema";
+import { subscriptions, users } from "@/server/db/schema";
 
 type Plan = "free" | "pro";
 type SubStatus = "active" | "past_due" | "canceled" | "trialing";
@@ -37,8 +37,32 @@ function periodEnd(sub: Stripe.Subscription): Date | null {
 const customerId = (sub: Stripe.Subscription): string =>
   typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
+/**
+ * Ensure a `users` row exists so the subscription FK holds even when the Clerk
+ * `user.created` webhook hasn't synced yet (common in local dev, or if that
+ * webhook lags in production). Never clobbers an existing row.
+ */
+async function ensureUser(
+  userId: string,
+  email: string | null,
+  name: string | null,
+): Promise<void> {
+  await db
+    .insert(users)
+    .values({ id: userId, email: email ?? `${userId}@users.invoiceiq.app`, name })
+    .onConflictDoNothing({ target: users.id });
+}
+
 /** Idempotent upsert of the user's subscription row from a Stripe subscription. */
 async function upsertFromSubscription(userId: string, sub: Stripe.Subscription): Promise<void> {
+  // If the user no longer exists (e.g. account deleted while Stripe was still
+  // sending events), there's nothing to sync — skip instead of FK-erroring.
+  const exists = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true },
+  });
+  if (!exists) return;
+
   const status = mapStatus(sub.status);
   const row = {
     userId,
@@ -75,6 +99,14 @@ export async function syncStripeEvent(event: Stripe.Event): Promise<void> {
       const subId =
         typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
       if (!userId || !subId) return;
+
+      // Create the user row up front (Stripe collects name+email at checkout) so
+      // the subscription insert can't FK-fail if Clerk hasn't synced the user.
+      await ensureUser(
+        userId,
+        session.customer_details?.email ?? session.customer_email ?? null,
+        session.customer_details?.name ?? null,
+      );
 
       // Detect the free→pro transition so a webhook replay doesn't re-send.
       const prior = await db.query.subscriptions.findFirst({

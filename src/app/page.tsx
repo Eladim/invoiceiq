@@ -198,7 +198,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="mx-auto max-w-[1120px] px-6 pt-24 pb-[84px]">
+      <section id="how" className="mx-auto max-w-[1120px] scroll-mt-20 px-6 pt-24 pb-[84px]">
         <div className="iql-reveal flex flex-col gap-2.5 text-center">
           <div className="text-[12.5px] font-bold tracking-[0.1em] text-indigo-600 uppercase">How it works</div>
           <h2 className="text-[clamp(28px,3.4vw,38px)] font-extrabold tracking-[-0.03em]">
@@ -228,7 +228,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="border-y border-slate-200 bg-slate-50">
+      <section id="features" className="scroll-mt-20 border-y border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-[1120px] px-6 py-22">
           <div className="iql-reveal flex flex-col gap-2.5 text-center">
             <div className="text-[12.5px] font-bold tracking-[0.1em] text-indigo-600 uppercase">Features</div>
@@ -274,7 +274,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing teaser */}
-      <section id="pricing" className="mx-auto max-w-[1120px] px-6 py-24">
+      <section id="pricing" className="mx-auto max-w-[1120px] scroll-mt-20 px-6 py-24">
         <div className="iql-reveal flex flex-col gap-2.5 text-center">
           <div className="text-[12.5px] font-bold tracking-[0.1em] text-indigo-600 uppercase">Pricing</div>
           <h2 className="text-[clamp(28px,3.4vw,38px)] font-extrabold tracking-[-0.03em]">

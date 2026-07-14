@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       : { customer_email: email }),
     allow_promotion_codes: true,
     success_url: `${origin}/app/billing?success=true`,
-    cancel_url: `${origin}/pricing`,
+    cancel_url: `${origin}/app/billing`,
   });
 
   return Response.json({ url: session.url });

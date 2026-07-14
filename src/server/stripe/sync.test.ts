@@ -5,7 +5,10 @@ const { dbMock, stripeMock } = vi.hoisted(() => ({
   dbMock: {
     insert: vi.fn(),
     update: vi.fn(),
-    query: { subscriptions: { findFirst: vi.fn() } },
+    query: {
+      subscriptions: { findFirst: vi.fn() },
+      users: { findFirst: vi.fn() },
+    },
   },
   stripeMock: { subscriptions: { retrieve: vi.fn() } },
 }));
@@ -16,10 +19,12 @@ vi.mock("@/lib/stripe", () => ({ getStripe: () => stripeMock }));
 vi.mock("@/lib/email", () => ({ sendWelcomeEmail: vi.fn() }));
 
 import { syncStripeEvent } from "./sync";
-import { subscriptions } from "@/server/db/schema";
+import { subscriptions, users } from "@/server/db/schema";
 
 let valuesSpy: ReturnType<typeof vi.fn>;
 let onConflictSpy: ReturnType<typeof vi.fn>;
+let userValuesSpy: ReturnType<typeof vi.fn>;
+let userConflictSpy: ReturnType<typeof vi.fn>;
 let setSpy: ReturnType<typeof vi.fn>;
 let whereSpy: ReturnType<typeof vi.fn>;
 
@@ -29,14 +34,20 @@ beforeEach(() => {
 
   onConflictSpy = vi.fn().mockResolvedValue(undefined);
   valuesSpy = vi.fn(() => ({ onConflictDoUpdate: onConflictSpy }));
-  dbMock.insert.mockReturnValue({ values: valuesSpy });
+  userConflictSpy = vi.fn().mockResolvedValue(undefined);
+  userValuesSpy = vi.fn(() => ({ onConflictDoNothing: userConflictSpy }));
+  // Route inserts by table: users use onConflictDoNothing, subscriptions upsert.
+  dbMock.insert.mockImplementation((table: unknown) =>
+    table === users ? { values: userValuesSpy } : { values: valuesSpy },
+  );
 
   whereSpy = vi.fn().mockResolvedValue(undefined);
   setSpy = vi.fn(() => ({ where: whereSpy }));
   dbMock.update.mockReturnValue({ set: setSpy });
 
-  // Default: no prior subscription row (fresh upgrade).
+  // Defaults: no prior subscription row (fresh upgrade); the user exists.
   dbMock.query.subscriptions.findFirst.mockResolvedValue(undefined);
+  dbMock.query.users.findFirst.mockResolvedValue({ id: "user_1" });
 });
 
 function fakeSubscription(overrides: Record<string, unknown> = {}) {
@@ -79,6 +90,36 @@ describe("syncStripeEvent", () => {
       }),
     );
     expect(onConflictSpy).toHaveBeenCalledOnce();
+  });
+
+  it("checkout.session.completed → ensures the user row exists before upserting", async () => {
+    stripeMock.subscriptions.retrieve.mockResolvedValue(fakeSubscription());
+
+    await syncStripeEvent(
+      evt("checkout.session.completed", {
+        client_reference_id: "user_1",
+        subscription: "sub_123",
+        customer_details: { email: "u@example.com", name: "Ada" },
+      }),
+    );
+
+    expect(dbMock.insert).toHaveBeenCalledWith(users);
+    expect(userValuesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "user_1", email: "u@example.com" }),
+    );
+    expect(userConflictSpy).toHaveBeenCalledOnce();
+    // Subscription still upserted afterwards.
+    expect(valuesSpy).toHaveBeenCalledWith(expect.objectContaining({ plan: "pro" }));
+  });
+
+  it("skips the subscription upsert when the user no longer exists", async () => {
+    dbMock.query.users.findFirst.mockResolvedValue(undefined);
+
+    await syncStripeEvent(
+      evt("customer.subscription.deleted", fakeSubscription({ status: "canceled" })),
+    );
+
+    expect(valuesSpy).not.toHaveBeenCalled();
   });
 
   it("customer.subscription.updated → syncs status and period end (past_due stays pro)", async () => {

@@ -129,6 +129,13 @@
   }
 }
 
+/* Smooth in-page anchor scrolling (landing nav), disabled for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Upload page (§8) — file-card state animations. */
 @keyframes iq-shimmer {
   0% { background-position: -320px 0; }

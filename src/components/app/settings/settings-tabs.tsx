@@ -224,8 +224,13 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
     startTransition(async () => {
       const res = await deleteAccount();
       if (res.ok) {
-        // Session is now invalid; clear it locally and leave the app.
-        await clerk.signOut({ redirectUrl: "/" });
+        // The Clerk user is already deleted, so signOut may stall talking to a
+        // dead session — cap it and hard-navigate away regardless.
+        await Promise.race([
+          clerk.signOut().catch(() => {}),
+          new Promise((r) => setTimeout(r, 2500)),
+        ]);
+        window.location.href = "/";
         return;
       }
       setError(res.error);
