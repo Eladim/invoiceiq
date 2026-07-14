@@ -96,9 +96,9 @@ export default function LandingPage() {
             <a href="#features" className="rounded-lg px-3.5 py-1.5 text-[13.5px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
               Features
             </a>
-            <Link href="/pricing" className="rounded-lg px-3.5 py-1.5 text-[13.5px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+            <a href="#pricing" className="rounded-lg px-3.5 py-1.5 text-[13.5px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
               Pricing
-            </Link>
+            </a>
           </nav>
           <div className="flex items-center gap-2.5">
             <Link href="/sign-in" className="rounded-lg px-3.5 py-1.5 text-[13.5px] font-semibold text-slate-700 hover:bg-slate-100">
