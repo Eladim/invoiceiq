@@ -455,7 +455,7 @@ export function UploadForm({ usage }: { usage: UsageSummary }) {
                 </span>
                 <span className="flex-1" />
                 <Link
-                  href="/app/invoices"
+                  href={f.invoiceId ? `/app/invoices/${f.invoiceId}` : "/app/invoices"}
                   className="rounded-[9px] bg-indigo-600 px-[15px] py-[7px] text-[12.5px] font-semibold text-white transition-colors hover:bg-indigo-700"
                 >
                   Review
