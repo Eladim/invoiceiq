@@ -1,36 +1,217 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# InvoiceIQ
 
-First, run the development server:
+**Drop in a PDF or photo of an invoice — get back clean, structured, queryable data in seconds.**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+AI-powered invoice parsing SaaS. Upload a document, an LLM extracts the vendor, totals, tax, dates,
+line items and a per-field confidence score, and everything lands in a searchable dashboard with
+spend analytics and CSV export.
+
+[**Live demo →**](https://invoiceiq-blush.vercel.app)  ·  one click, no signup — hit **“Use demo account.”**
+
+</div>
+
+---
+
+## The problem
+
+Manually keying invoices into a spreadsheet is slow, error-prone, and nobody's idea of a good time.
+Bookkeepers and small teams do it hundreds of times a month. InvoiceIQ turns that into a drag-and-drop:
+the model reads the document, returns structured fields validated against a strict schema, and flags
+anything it's *not* sure about so a human can double-check instead of blindly trusting the output.
+
+The interesting engineering isn't "call an LLM" — it's making the extraction **trustworthy** (Zod-validated
+Structured Outputs, per-field confidence, one retry with error feedback, graceful `failed` state), the
+data **isolated** (every query scoped to the authenticated user), the quota **race-safe** (enforced inside
+the same DB transaction that writes the invoice), and the billing **honest** (Stripe as the source of truth,
+synced via idempotent webhooks).
+
+## Demo
+
+▶️ **[Try the live demo](https://invoiceiq-blush.vercel.app)** — click **“Use demo account”** on the sign-in
+page to jump straight into an account preloaded with sample invoices and analytics. No signup required.
+
+<!--
+  Once you've recorded the ~2-minute walkthrough (shot list in docs/README.md), save it as docs/demo.gif
+  and replace this comment with:  ![InvoiceIQ demo](docs/demo.gif)
+-->
+
+
+## Architecture
+
+Next.js App Router on Vercel. Mutations are Server Actions; anything that *must* be an HTTP endpoint
+(webhooks, status polling, file streaming, export) is a route handler. Postgres (Neon) via Drizzle,
+Clerk for auth, Stripe for billing, OpenAI Structured Outputs for extraction, Vercel Blob (private) for files.
+
+```mermaid
+flowchart TD
+    U[Browser] -->|drag & drop| UA["Server Action: uploadInvoice"]
+
+    subgraph Vercel["Next.js on Vercel"]
+        UA -->|"validate type/size + magic bytes (Zod)"| Q{Quota OK?}
+        Q -->|"free tier ≥ 5/mo"| R402["Reject → upgrade prompt"]
+        Q -->|ok| BLOB[(Vercel Blob<br/>private store)]
+        UA -->|"one transaction:<br/>upsert user · increment usage · insert invoice"| DB[(Neon Postgres<br/>Drizzle)]
+        UA -.->|"after() — background"| EX["Extraction pipeline"]
+        EX -->|"private blob → base64"| AI["OpenAI Structured Outputs<br/>(gpt-5.6-luna)"]
+        AI -->|"JSON"| ZOD["Zod validate<br/>1 retry on failure"]
+        ZOD -->|"fields + line items + confidence"| DB
+        ZOD -.->|invalid twice| FAIL["status = failed<br/>+ readable reason"]
+        POLL["Route: /api/invoices/[id]/status"] --> DB
+        FILE["Route: /api/invoices/[id]/file"] --> BLOB
+    end
+
+    U -->|poll until done| POLL
+    PROXY["Clerk auth — src/proxy.ts<br/>(guards every /app route)"] -.-> Vercel
+
+    CHK["Route: /api/stripe/checkout"] --> STRIPE[Stripe]
+    STRIPE -->|webhook| WH["Route: /api/stripe/webhook"]
+    WH -->|"sync subscription (source of truth)"| DB
+    CLERKWH["Route: /api/clerk/webhook"] -->|"sync user"| DB
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Extraction pipeline (the core flow):**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Client uploads (drag-drop; ≤ 10 MB; pdf/png/jpg — validated client- and server-side, incl. magic-byte sniffing).
+2. Quota checked; free tier is **5 documents / calendar month**, rejected with an upgrade prompt if spent.
+3. File → private Vercel Blob; then **one transaction** upserts the user, increments the monthly usage
+   counter, enforces the quota (row lock = concurrent-upload safe), and inserts the invoice as `processing`.
+4. `after()` kicks off extraction in the background: the private blob is fetched and sent to OpenAI with a
+   strict JSON schema via **Structured Outputs**.
+5. Response is **Zod-validated**; on failure it retries once with the error fed back, else the invoice is
+   marked `failed` with a user-readable reason.
+6. Fields + line items are saved, `status = completed`. The client polls `/api/invoices/[id]/status`.
+7. Every field the model marks **low-confidence** renders with a warning icon — you see what to double-check
+   rather than trusting the AI blindly.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Data model
 
-## Learn More
+`users` (synced from Clerk) · `subscriptions` (1:1, Stripe-backed) · `invoices` · `line_items`
+· `usage_counters` (composite PK `(user_id, period)` so a quota check is a single indexed read).
+Full schema in [`src/server/db/schema.ts`](src/server/db/schema.ts).
 
-To learn more about Next.js, take a look at the following resources:
+## Tech stack & why
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Area | Choice | Why |
+| --- | --- | --- |
+| Framework | **Next.js 16** (App Router, RSC) | Server Components keep data-fetching on the server and secrets out of the client; Server Actions for mutations, route handlers only where HTTP is required. |
+| Language | **TypeScript** (strict) | Types end-to-end, including inferred Drizzle row types and Zod-inferred schemas. |
+| DB | **Neon Postgres** + **Drizzle ORM** | Serverless Postgres with a typed query builder and real migrations (no raw SQL push). Relational data (invoices → line items) wants a relational DB. |
+| Auth | **Clerk** | Drop-in auth + hosted UI; middleware (`src/proxy.ts`) guards every `/app` route; users synced to our DB via webhook. |
+| Payments | **Stripe** | Checkout + Billing Portal; subscription state synced to the DB via **idempotent webhooks** — Stripe is the source of truth, never the client. |
+| AI | **OpenAI Structured Outputs** (`OPENAI_MODEL`, default `gpt-5.6-luna`) | Schema-constrained JSON means the model *can't* return malformed data; pairs with Zod for a second validation gate + per-field confidence. |
+| Files | **Vercel Blob** (private) | Invoice documents are sensitive, so the store is private and files are streamed back through an auth-checked route. |
+| UI | **Tailwind v4** + **shadcn/ui** + **Recharts** | Fast, consistent styling; every data view has loading, empty, and error states. |
+| Tests | **Vitest** (unit) + **Playwright** (E2E) | Unit tests on validation/extraction/sync; E2E covers upload, quota→checkout, and demo login against real services. |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Conventions** worth calling out (enforced across the codebase): Server Components by default;
+> all external input crosses a Zod schema in `src/lib/validations/`; **every DB query is scoped to the
+> authenticated user** (ownership checked, client ids never trusted); money is stored as numeric strings and
+> formatted with `Intl.NumberFormat`; secrets are validated at boot in [`src/lib/env.ts`](src/lib/env.ts).
 
-## Deploy on Vercel
+## Getting started
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Prerequisites
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Node 20+** and **pnpm** (`npm i -g pnpm`)
+- Accounts / keys: [Neon](https://neon.tech), [Clerk](https://clerk.com), [OpenAI](https://platform.openai.com),
+  [Stripe](https://stripe.com), and a [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) store.
+
+### 1. Install & configure
+
+```bash
+git clone https://github.com/Eladim/invoiceiq.git
+cd invoiceiq
+pnpm install
+cp .env.example .env   # then fill in the values below
+```
+
+### 2. Environment variables
+
+Set these in `.env` (validated at boot by [`src/lib/env.ts`](src/lib/env.ts) — the app fails loudly if any required one is missing):
+
+| Variable | Required | What it is |
+| --- | :---: | --- |
+| `DATABASE_URL` | ✅ | Neon Postgres connection string. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✅ | Clerk publishable key. |
+| `CLERK_SECRET_KEY` | ✅ | Clerk secret key. |
+| `OPENAI_API_KEY` | ✅ | OpenAI API key (used for Structured Outputs extraction). |
+| `OPENAI_MODEL` | – | Extraction model; defaults to `gpt-5.6-luna`. |
+| `BLOB_READ_WRITE_TOKEN` | ✅¹ | Vercel Blob read/write token (uploads fail without it). |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | –² | Signing secret for the Clerk user-sync webhook. |
+| `STRIPE_SECRET_KEY` | –² | Stripe secret key. |
+| `STRIPE_WEBHOOK_SECRET` | –² | Signing secret for the Stripe webhook (`stripe listen` prints one for local dev). |
+| `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | –² | Stripe Price IDs for the Pro plan. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | –² | Stripe publishable key. |
+
+¹ Optional to boot the app, but uploads require it.  ² Optional to boot; the billing/webhook code paths fail loudly when hit without them.
+
+`SEED_DEMO_USER_ID` (optional, used only by `pnpm db:seed` / `pnpm demo:setup`) is the Clerk id the seed
+scripts attach sample invoices to — defaults to `user_demo`. See `.env.example` for the full annotated list.
+
+### 3. Database
+
+```bash
+pnpm db:generate   # generate SQL migrations from the Drizzle schema
+pnpm db:migrate    # apply them to your Neon database
+```
+
+### 4. Run
+
+```bash
+pnpm dev           # http://localhost:3000
+```
+
+For local Stripe webhooks, in a second terminal:
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+### Scripts
+
+| Command | Does |
+| --- | --- |
+| `pnpm dev` / `pnpm build` / `pnpm start` | Next.js dev / production build / serve. |
+| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit`. |
+| `pnpm test` / `pnpm test:e2e` | Vitest unit tests / Playwright E2E (`npx playwright install chromium` first). |
+| `pnpm db:generate` / `pnpm db:migrate` | Generate / apply Drizzle migrations. |
+| `pnpm db:seed` | Seed sample data. ⚠️ Wipes the target user's rows first — check `SEED_DEMO_USER_ID`. |
+| `pnpm demo:setup` | Create/reset the public demo account (re-run to reset its data + usage). |
+| `pnpm e2e:setup` | Provision the two `+clerk_test` E2E users. |
+
+## Testing
+
+- **Unit** (Vitest): file validation, the extraction pipeline's consistency checks, and Stripe subscription sync.
+- **E2E** (Playwright, against real Clerk/Stripe/OpenAI/Blob): the upload → extraction flow, the
+  quota-exceeded → Stripe checkout → Pro upgrade flow, and one-click demo login. See [`e2e/`](e2e/).
+
+## Project structure
+
+```
+src/
+├─ app/                    # routes (App Router)
+│  ├─ page.tsx             # public landing page
+│  ├─ pricing/             # pricing
+│  ├─ sign-in, sign-up/    # Clerk auth (+ "Use demo account")
+│  ├─ app/                 # authenticated dashboard (guarded by src/proxy.ts)
+│  │  ├─ page.tsx          # analytics dashboard
+│  │  ├─ upload/           # drag-drop upload
+│  │  ├─ invoices/         # list + [id] detail
+│  │  ├─ billing/          # plan, usage, Stripe portal
+│  │  └─ settings/
+│  └─ api/                 # route handlers: stripe/*, clerk/webhook, invoices/[id]/{status,file}, export, demo-login
+├─ server/
+│  ├─ actions/             # Server Actions (mutations): upload, invoice
+│  ├─ db/                  # Drizzle schema, client, migrations, seed
+│  ├─ extraction/          # OpenAI Structured Outputs pipeline
+│  └─ stripe/              # subscription sync
+├─ lib/                    # env, validations (Zod), constants, formatting
+├─ components/             # UI (shadcn/ui) + app/marketing components
+└─ proxy.ts               # Clerk middleware (auth on all /app routes)
+```
+
+## License
+
+Portfolio project — not licensed for reuse.

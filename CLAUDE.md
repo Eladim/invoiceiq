@@ -23,6 +23,8 @@ Clerk auth, Stripe subscriptions, OpenAI gpt-5.6-luna via Structured Outputs, Ve
 ## Commands
 pnpm dev / pnpm build / pnpm lint / pnpm typecheck / pnpm test
 pnpm db:generate / pnpm db:migrate / pnpm db:seed
+pnpm demo:setup — create/reset the public demo account (re-run to reset its data + usage to 2/5)
+pnpm e2e:setup — provision the two +clerk_test E2E users; pnpm test:e2e — run Playwright (needs `npx playwright install chromium`)
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 ## Definition of done
