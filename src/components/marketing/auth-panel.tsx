@@ -11,6 +11,12 @@ import { AuthLoading } from "./auth-loading";
  *  - Success overlay: once Clerk marks the user signed in (credentials accepted),
  *    a full-screen "Signing you in…" spinner covers the gap until Clerk redirects
  *    to the dashboard — matching the one-click demo experience.
+ *
+ * Dev-instance caveat: on a Clerk *development* instance, sign-in completes via a
+ * cross-domain handshake on clerk.accounts.dev, so the browser briefly leaves the
+ * app and the success overlay is often skipped (that transit page isn't ours to
+ * render on). It shows reliably in production (custom domain), and always covers
+ * the in-app portions and slow dashboard loads — so it's worth keeping.
  */
 export function AuthPanel({ mode }: { mode: "sign-in" | "sign-up" }) {
   const { isSignedIn } = useAuth();

@@ -103,6 +103,8 @@ Full schema in [`src/server/db/schema.ts`](src/server/db/schema.ts).
 | Payments | **Stripe** | Checkout + Billing Portal; subscription state synced to the DB via **idempotent webhooks** — Stripe is the source of truth, never the client. |
 | AI | **OpenAI Structured Outputs** (`OPENAI_MODEL`, default `gpt-5.6-luna`) | Schema-constrained JSON means the model *can't* return malformed data; pairs with Zod for a second validation gate + per-field confidence. |
 | Files | **Vercel Blob** (private) | Invoice documents are sensitive, so the store is private and files are streamed back through an auth-checked route. |
+| Rate limiting | **Upstash Redis** (`@upstash/ratelimit`) | A shared, serverless-friendly counter caps the upload endpoint at 10/min per user across instances. Optional (fails open). |
+| Email | **Resend** | Transactional email — welcome-to-Pro and quota warnings — with real deliverability. Optional. |
 | UI | **Tailwind v4** + **shadcn/ui** + **Recharts** | Fast, consistent styling; every data view has loading, empty, and error states. |
 | Tests | **Vitest** (unit) + **Playwright** (E2E) | Unit tests on validation/extraction/sync; E2E covers upload, quota→checkout, and demo login against real services. |
 
@@ -118,6 +120,7 @@ Full schema in [`src/server/db/schema.ts`](src/server/db/schema.ts).
 - **Node 20+** and **pnpm** (`npm i -g pnpm`)
 - Accounts / keys: [Neon](https://neon.tech), [Clerk](https://clerk.com), [OpenAI](https://platform.openai.com),
   [Stripe](https://stripe.com), and a [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) store.
+- Optional: [Upstash](https://upstash.com) (upload rate limiting) and [Resend](https://resend.com) (transactional email) — the app runs fine without them.
 
 ### 1. Install & configure
 
@@ -145,6 +148,10 @@ Set these in `.env` (validated at boot by [`src/lib/env.ts`](src/lib/env.ts) —
 | `STRIPE_WEBHOOK_SECRET` | –² | Signing secret for the Stripe webhook (`stripe listen` prints one for local dev). |
 | `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | –² | Stripe Price IDs for the Pro plan. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | –² | Stripe publishable key. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | – | Upstash Redis — enables the upload rate limiter (10/min per user). Skipped if unset. |
+| `RESEND_API_KEY` | – | Resend API key — enables welcome + quota-warning emails. Skipped if unset. |
+| `RESEND_FROM` | – | Sender for Resend emails — a verified domain, or `onboarding@resend.dev` for testing (delivers only to your Resend account address). |
+| `NEXT_PUBLIC_APP_URL` | – | Absolute base URL used in email links. Defaults to `http://localhost:3000`. |
 
 ¹ Optional to boot the app, but uploads require it.  ² Optional to boot; the billing/webhook code paths fail loudly when hit without them.
 
@@ -204,11 +211,11 @@ src/
 │  │  └─ settings/
 │  └─ api/                 # route handlers: stripe/*, clerk/webhook, invoices/[id]/{status,file}, export, demo-login
 ├─ server/
-│  ├─ actions/             # Server Actions (mutations): upload, invoice
+│  ├─ actions/             # Server Actions (mutations): upload, invoice, account
 │  ├─ db/                  # Drizzle schema, client, migrations, seed
 │  ├─ extraction/          # OpenAI Structured Outputs pipeline
 │  └─ stripe/              # subscription sync
-├─ lib/                    # env, validations (Zod), constants, formatting
+├─ lib/                    # env, validations (Zod), constants, formatting, rate limiting, email
 ├─ components/             # UI (shadcn/ui) + app/marketing components
 └─ proxy.ts               # Clerk middleware (auth on all /app routes)
 ```
