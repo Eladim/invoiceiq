@@ -132,25 +132,25 @@ cp .env.example .env   # then fill in the values below
 
 Set these in `.env` (validated at boot by [`src/lib/env.ts`](src/lib/env.ts) — the app fails loudly if any required one is missing):
 
-| Variable | Required | What it is |
-| --- | :---: | --- |
-| `DATABASE_URL` | ✅ | Neon Postgres connection string. |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✅ | Clerk publishable key. |
-| `CLERK_SECRET_KEY` | ✅ | Clerk secret key. |
-| `OPENAI_API_KEY` | ✅ | OpenAI API key (used for Structured Outputs extraction). |
-| `OPENAI_MODEL` | – | Extraction model; defaults to `gpt-5.6-luna`. |
-| `BLOB_READ_WRITE_TOKEN` | ✅¹ | Vercel Blob read/write token (uploads fail without it). |
-| `CLERK_WEBHOOK_SIGNING_SECRET` | –² | Signing secret for the Clerk user-sync webhook. |
-| `STRIPE_SECRET_KEY` | –² | Stripe secret key. |
-| `STRIPE_WEBHOOK_SECRET` | –² | Signing secret for the Stripe webhook (`stripe listen` prints one for local dev). |
-| `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | –² | Stripe Price IDs for the Pro plan. |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | –² | Stripe publishable key. |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | – | Upstash Redis — enables the upload rate limiter (10/min per user). Skipped if unset. |
-| `RESEND_API_KEY` | – | Resend API key — enables welcome + quota-warning emails. Skipped if unset. |
-| `RESEND_FROM` | – | Sender for Resend emails — a verified domain, or `onboarding@resend.dev` for testing (delivers only to your Resend account address). |
-| `NEXT_PUBLIC_APP_URL` | – | Absolute base URL used in email links. Defaults to `http://localhost:3000`. |
+| Variable | Needed | What it is |
+| --- | --- | --- |
+| `DATABASE_URL` | Always | Neon Postgres connection string. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Always | Clerk publishable key. |
+| `CLERK_SECRET_KEY` | Always | Clerk secret key. |
+| `OPENAI_API_KEY` | Always | OpenAI API key (used for Structured Outputs extraction). |
+| `BLOB_READ_WRITE_TOKEN` | For uploads | Vercel Blob read/write token — uploads fail without it. |
+| `STRIPE_SECRET_KEY` | For billing | Stripe secret key. |
+| `STRIPE_WEBHOOK_SECRET` | For billing | Signing secret for the Stripe webhook (`stripe listen` prints one for local dev). |
+| `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | For billing | Stripe Price IDs for the Pro plan. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | For billing | Stripe publishable key. |
+| `OPENAI_MODEL` | Optional | Extraction model; defaults to `gpt-5.6-luna`. |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | Optional | Signing secret for the Clerk user-sync webhook. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash Redis — enables the upload rate limiter (10/min per user). Skipped if unset. |
+| `RESEND_API_KEY` | Optional | Resend API key — enables welcome + quota-warning emails. Skipped if unset. |
+| `RESEND_FROM` | Optional | Sender for Resend emails — a verified domain, or `onboarding@resend.dev` for testing (delivers only to your Resend account address). |
+| `NEXT_PUBLIC_APP_URL` | Optional | Absolute base URL used in email links. Defaults to `http://localhost:3000`. |
 
-¹ Optional to boot the app, but uploads require it.  ² Optional to boot; the billing/webhook code paths fail loudly when hit without them.
+**Always** = the app won't boot without it · **For uploads / For billing** = required only when you use that feature · **Optional** = safe to omit (the feature is disabled or a sensible default is used).
 
 `SEED_DEMO_USER_ID` (optional, used only by `pnpm db:seed` / `pnpm demo:setup`) is the Clerk id the seed
 scripts attach sample invoices to — defaults to `user_demo`. See `.env.example` for the full annotated list.
