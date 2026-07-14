@@ -29,14 +29,11 @@ synced via idempotent webhooks).
 
 ## Demo
 
+![InvoiceIQ — one-click demo login and live invoice extraction](docs/demo.gif)
+
 ▶️ **[Try the live demo](https://invoiceiq-blush.vercel.app)** — hit **“View live demo”** on the landing page
 to drop straight into an account preloaded with sample invoices and analytics. No signup required.
 (There's also a **“Use demo account”** button on the sign-in page for anyone who lands there directly.)
-
-<!--
-  Once you've recorded the ~2-minute walkthrough (shot list in docs/README.md), save it as docs/demo.gif
-  and replace this comment with:  ![InvoiceIQ demo](docs/demo.gif)
--->
 
 
 ## Architecture
