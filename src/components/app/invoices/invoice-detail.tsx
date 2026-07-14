@@ -324,9 +324,12 @@ export function InvoiceDetail(props: InvoiceDetailProps) {
 
       {/* Save bar */}
       {dirty && (
+        // Full-width fixed strip offset by the sidebar, bar centered inside it —
+        // fixed left-1/2 would center on the viewport, not the content area.
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 md:left-64">
         <div
-          style={{ animation: "iq-slide-up .2s ease both" }}
-          className="fixed bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-xl"
+          style={{ animation: "iq-pop .2s ease both" }}
+          className="pointer-events-auto mx-auto flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-xl"
         >
           <span className="pl-1 text-sm text-slate-600">Unsaved changes</span>
           <button
@@ -348,6 +351,7 @@ export function InvoiceDetail(props: InvoiceDetailProps) {
             {pending && <Loader2 className="size-4 animate-spin" />}
             Save changes
           </button>
+        </div>
         </div>
       )}
 

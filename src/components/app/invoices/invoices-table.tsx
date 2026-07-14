@@ -24,6 +24,7 @@ import {
 } from "@/lib/validations/invoice-filters";
 import { deleteInvoice } from "@/server/actions/invoice";
 import type { InvoiceRow } from "@/server/queries/invoices";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CategoryBadge, StatusBadge } from "./badges";
 import { ExportCsvButton } from "./export-csv-button";
 
@@ -123,6 +124,11 @@ export function InvoicesTable({
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
+  const [confirm, setConfirm] = useState<{
+    title: string;
+    message: string;
+    run: () => void;
+  } | null>(null);
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const someSelected = selected.size > 0;
@@ -141,25 +147,36 @@ export function InvoicesTable({
   }
 
   function deleteOne(id: string, label: string) {
-    if (!window.confirm(`Delete "${label}"? This can't be undone.`)) return;
-    startTransition(async () => {
-      await deleteInvoice(id);
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      router.refresh();
+    setConfirm({
+      title: `Delete “${label}”?`,
+      message: "This invoice and its stored file will be permanently removed. This can’t be undone.",
+      run: () =>
+        startTransition(async () => {
+          await deleteInvoice(id);
+          setSelected((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          router.refresh();
+          setConfirm(null);
+        }),
     });
   }
 
   function deleteSelected() {
-    if (!window.confirm(`Delete ${selected.size} selected invoice(s)? This can't be undone.`)) return;
+    const count = selected.size;
     const ids = [...selected];
-    startTransition(async () => {
-      await Promise.all(ids.map((id) => deleteInvoice(id)));
-      setSelected(new Set());
-      router.refresh();
+    setConfirm({
+      title: `Delete ${count} invoice${count === 1 ? "" : "s"}?`,
+      message: "The selected invoices and their stored files will be permanently removed. This can’t be undone.",
+      run: () =>
+        startTransition(async () => {
+          await Promise.all(ids.map((id) => deleteInvoice(id)));
+          setSelected(new Set());
+          router.refresh();
+          setConfirm(null);
+        }),
     });
   }
 
@@ -250,30 +267,45 @@ export function InvoicesTable({
       </div>
 
       {someSelected && (
-        <div
-          style={{ animation: "iq-slide-up .2s ease both" }}
-          className="fixed bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-xl"
-        >
-          <span className="pl-1 text-sm font-medium text-slate-700">{selected.size} selected</span>
-          <div className="h-5 w-px bg-slate-200" />
-          <button
-            onClick={deleteSelected}
-            disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 md:left-64">
+          <div
+            // iq-pop animates translateY only — iq-slide-up bakes in a
+            // translateX(-50%) that would drag the mx-auto-centered bar left.
+            style={{ animation: "iq-pop .2s ease both" }}
+            className="pointer-events-auto mx-auto flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-xl"
           >
-            <Trash2 className="size-4" />
-            Delete selected
-          </button>
-          <ExportCsvButton isPro={isPro} ids={[...selected]} label="Export selected" />
-          <button
-            onClick={() => setSelected(new Set())}
-            aria-label="Clear selection"
-            className="flex rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X className="size-4" />
-          </button>
+            <span className="pl-1 text-sm font-medium text-slate-700">{selected.size} selected</span>
+            <div className="h-5 w-px bg-slate-200" />
+            <button
+              onClick={deleteSelected}
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            >
+              <Trash2 className="size-4" />
+              Delete selected
+            </button>
+            <ExportCsvButton isPro={isPro} ids={[...selected]} label="Export selected" />
+            <button
+              onClick={() => setSelected(new Set())}
+              aria-label="Clear selection"
+              className="flex rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.title ?? ""}
+        message={confirm?.message}
+        confirmLabel="Delete"
+        destructive
+        pending={pending}
+        onConfirm={() => confirm?.run()}
+        onCancel={() => setConfirm(null)}
+      />
     </>
   );
 }

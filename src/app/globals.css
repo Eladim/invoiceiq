@@ -149,10 +149,6 @@
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes iq-slide-up {
-  from { opacity: 0; transform: translate(-50%, 16px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
 
 /* Landing page (§8) — namespaced iql-* so they don't collide with the upload
    page's iq-scan/iq-pop above. */

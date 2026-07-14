@@ -40,11 +40,13 @@ export default async function PricingPage() {
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900">
       {/* Public header */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <ScanLine className="size-5 text-indigo-600" />
-            InvoiceIQ
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/[0.82] backdrop-blur-[14px]">
+        <div className="mx-auto flex h-16 max-w-[1120px] items-center justify-between gap-4 px-6">
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="flex size-[30px] items-center justify-center rounded-[9px] bg-indigo-600 text-white shadow-[0_4px_12px_rgba(79,70,229,0.35)]">
+              <ScanLine className="size-4" strokeWidth={2.4} />
+            </span>
+            <span className="text-base font-bold tracking-[-0.02em]">InvoiceIQ</span>
           </Link>
           <nav className="flex items-center gap-2 text-sm">
             {isSignedIn ? (
